@@ -12,18 +12,17 @@
 <style>body{margin:0;background:#2a1d17;color:#fff;font:16px -apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:16px;box-sizing:border-box}img{width:160px;border-radius:32px}a{color:#eb5b2a}</style>
 <script>
 var APP="https://claude.ai/artifact/737us6D8fURghgTDhXVs8f";
-// La primera visita se queda aquí para poder añadirla a la pantalla de inicio.
-// Desde la segunda (al abrir el icono) va directa a la app.
+// Desde el enlace se queda aquí para poder instalarla; al abrir el icono va directa a la app.
 try {
-  if (window.navigator.standalone || localStorage.getItem("perucho_visto")) location.replace(APP);
-  else localStorage.setItem("perucho_visto", "1");
+  if (/[?&]app=1/.test(location.search) || window.navigator.standalone ||
+      matchMedia("(display-mode: standalone)").matches) location.replace(APP);
 } catch (e) {}
 </script>
 </head>
 <body>
 <img src="icono-512.png" alt="Casa Perucho">
 <h1>Perucho Gestión</h1>
-<p>Para tenerla en el móvil: toca <b>Compartir</b> y luego <b>Añadir a pantalla de inicio</b>.</p>
+<p>Para tenerla en el móvil: abre este enlace en <b>Chrome</b>, toca los <b>tres puntos ⋮</b> de arriba a la derecha y luego <b>Añadir a pantalla de inicio</b> (o <b>Instalar aplicación</b>).</p>
 <p><a href="https://claude.ai/artifact/737us6D8fURghgTDhXVs8f">Entrar ahora</a></p>
 </body>
 </html>
