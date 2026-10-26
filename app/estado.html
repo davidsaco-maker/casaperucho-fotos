@@ -21,10 +21,13 @@ img{width:100%;max-width:300px;border-radius:16px;display:block;margin:0 auto 16
 .btn.sec{background:var(--panel);font-weight:500;font-size:16px}
 .aviso{background:var(--panel);border-radius:14px;padding:14px;color:var(--muted)}
 ol{text-align:left;color:var(--muted);padding-left:22px;line-height:1.5}
+.volver{align-self:flex-start;border:0;background:none;color:var(--muted);font:inherit;font-size:16px;padding:6px 0;margin-bottom:4px}
+.texto{background:var(--panel);border-radius:14px;padding:12px 14px;text-align:left;margin:0 0 12px;white-space:pre-wrap}
 </style>
 </head>
 <body>
 <main>
+  <button class="volver" id="volver" type="button">← Volver</button>
   <h1>Menú de hoy al estado</h1>
   <p id="fecha"></p>
   <div class="seg" id="seg">
@@ -46,6 +49,15 @@ var grupo = /[?&]modo=grupo/.test(location.search);
 var l = (location.search.match(/[?&]l=(es|al)/) || [])[1];
 try { if (!l) l = localStorage.getItem("pp_estado_local") || ""; } catch (e) {}
 var archivo = null;
+var GESTION = "https://claude.ai/artifact/737us6D8fURghgTDhXVs8f";
+// La tarjeta de Gestión abre esta página en otra pestaña: volver = cerrarla; si no se puede, ir a Gestión.
+function volver() {
+  if (history.length > 1) { history.back(); return; }
+  window.close();
+  setTimeout(function () { location.href = GESTION; }, 300);
+}
+document.getElementById("volver").onclick = volver;
+function botonVolver() { return '<button class="btn sec" type="button" onclick="volver()">Ya está, volver</button>'; }
 
 function pintar() {
   document.querySelectorAll("#seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.l === l)); });
@@ -63,7 +75,7 @@ function pintar() {
       (puede ? '<button class="btn" id="compartir">Subir a mi estado de WhatsApp</button>' +
                '<ol><li>Toca el botón y elige <b>WhatsApp</b>.</li><li>Arriba del todo, toca <b>Mi estado</b>.</li><li>Pulsa enviar. Listo.</li></ol>'
              : '<a class="btn" href="' + url + '" download="' + archivo.name + '">Guardar la imagen</a>' +
-               '<ol><li>Guarda la imagen.</li><li>En WhatsApp, ve a <b>Novedades</b> y toca la cámara de <b>Mi estado</b>.</li><li>Elige la imagen de la galería y envía.</li></ol>');
+               '<ol><li>Guarda la imagen.</li><li>En WhatsApp, ve a <b>Novedades</b> y toca la cámara de <b>Mi estado</b>.</li><li>Elige la imagen de la galería y envía.</li></ol>') + botonVolver();
     var c = document.getElementById("compartir");
     if (c) c.onclick = function () { navigator.share({files: [archivo]}).catch(function () {}); };
   }).catch(function () {
@@ -80,18 +92,23 @@ function pintarGrupos() {
   document.getElementById("seg").style.display = "none";
   var z = document.getElementById("zona");
   z.innerHTML = "";
+  // Texto: el mismo de Instagram de hoy (<fecha>/texto.txt, lo escribe Claude al preparar el menú); si no está, uno genérico.
   var texto = "Menú de hoy, " + dia.toLocaleDateString("es-ES", {weekday: "long", day: "numeric", month: "numeric"}) + " 🍽️";
+  var listoTexto = fetch("../" + hoy + "/texto.txt", {cache: "no-store"}).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { t = t.trim(); if (t) texto = t; }).catch(function () {});
   ["es", "al"].forEach(function (k) {
     var caja = document.createElement("div");
     caja.innerHTML = '<div class="aviso">Buscando el menú de ' + LOC[k].nombre + '…</div>';
     z.appendChild(caja);
     var url = "../" + hoy + "/" + LOC[k].post;
-    fetch(url, {cache: "no-store"}).then(function (r) { if (!r.ok) throw new Error("falta"); return r.blob(); }).then(function (b) {
+    Promise.all([fetch(url, {cache: "no-store"}).then(function (r) { if (!r.ok) throw new Error("falta"); return r.blob(); }), listoTexto]).then(function (res) {
+      var b = res[0];
       var f = new File([b], "menu-" + hoy + "-" + k + ".jpg", {type: "image/jpeg"});
       var puede = navigator.canShare && navigator.canShare({files: [f], text: texto});
       caja.innerHTML = '<h1 style="font-size:19px;margin-top:18px">' + LOC[k].nombre + '</h1><img alt="Menú de hoy de ' + LOC[k].nombre + '" src="' + URL.createObjectURL(b) + '">' +
+        '<div class="texto"></div>' +
         (puede ? '<button class="btn">Enviar al grupo ' + LOC[k].nombre + '</button>'
                : '<a class="btn" href="' + url + '" download="' + f.name + '">Guardar la imagen</a>');
+      caja.querySelector(".texto").textContent = texto;
       var c = caja.querySelector("button");
       if (c) c.onclick = function () { navigator.share({files: [f], text: texto}).catch(function () {}); };
     }).catch(function () {
@@ -102,6 +119,9 @@ function pintarGrupos() {
   var ayuda = document.createElement("ol");
   ayuda.innerHTML = "<li>Toca «Enviar al grupo» y elige <b>WhatsApp</b>.</li><li>Elige el grupo del local y envía.</li>";
   z.appendChild(ayuda);
+  var fin = document.createElement("div");
+  fin.innerHTML = botonVolver();
+  z.appendChild(fin);
 }
 if (grupo) pintarGrupos(); else pintar();
 </script>
