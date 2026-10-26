@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Menú de hoy al estado</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icono-192.png">
+<meta name="theme-color" content="#171213">
+<style>
+:root{--bg:#2a1d17;--panel:#3a2a22;--txt:#fff;--muted:#d9c9bf;--accent:#eb5b2a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px -apple-system,system-ui,sans-serif;padding:16px;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+main{width:100%;max-width:440px;text-align:center}
+h1{font-size:22px;margin:8px 0 4px}
+p{color:var(--muted);margin:6px 0 14px;line-height:1.4}
+.seg{display:flex;gap:8px;justify-content:center;margin:10px 0 16px}
+.seg button{flex:1;border:0;border-radius:999px;padding:10px 12px;font:inherit;background:var(--panel);color:var(--txt)}
+.seg button[aria-pressed=true]{background:var(--accent)}
+img{width:100%;max-width:300px;border-radius:16px;display:block;margin:0 auto 16px;background:var(--panel)}
+.btn{display:block;width:100%;border:0;border-radius:999px;padding:16px;font:600 18px inherit;font-family:inherit;background:var(--accent);color:#fff;text-decoration:none;margin:8px 0}
+.btn.sec{background:var(--panel);font-weight:500;font-size:16px}
+.aviso{background:var(--panel);border-radius:14px;padding:14px;color:var(--muted)}
+ol{text-align:left;color:var(--muted);padding-left:22px;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+  <h1>Menú de hoy al estado</h1>
+  <p id="fecha"></p>
+  <div class="seg" id="seg">
+    <button data-l="es">Espíritu Santo</button>
+    <button data-l="al">Alvedro</button>
+  </div>
+  <div id="zona"></div>
+</main>
+<script>
+// Saca la historia del menú de hoy (la que David aprobó y ya está en GitHub) y la comparte a WhatsApp.
+var LOC = {es: {nombre: "Espíritu Santo", archivo: "historia-1-menu-espiritu-santo.jpg"},
+           al: {nombre: "Alvedro", archivo: "historia-2-menu-alvedro.jpg"}};
+var hoy = new Intl.DateTimeFormat("en-CA", {timeZone: "Europe/Madrid"}).format(new Date());
+var dia = new Date(hoy + "T12:00:00");
+document.getElementById("fecha").textContent = dia.toLocaleDateString("es-ES", {weekday: "long", day: "numeric", month: "long"});
+
+var l = (location.search.match(/[?&]l=(es|al)/) || [])[1];
+try { if (!l) l = localStorage.getItem("pp_estado_local") || ""; } catch (e) {}
+var archivo = null;
+
+function pintar() {
+  document.querySelectorAll("#seg button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.l === l)); });
+  var z = document.getElementById("zona");
+  if (!l) { z.innerHTML = '<div class="aviso">Elige tu local.</div>'; return; }
+  var url = "../" + hoy + "/" + LOC[l].archivo;
+  z.innerHTML = '<div class="aviso">Buscando el menú de hoy…</div>';
+  fetch(url, {cache: "no-store"}).then(function (r) {
+    if (!r.ok) throw new Error("falta");
+    return r.blob();
+  }).then(function (b) {
+    archivo = new File([b], "menu-" + hoy + "-" + l + ".jpg", {type: "image/jpeg"});
+    var puede = navigator.canShare && navigator.canShare({files: [archivo]});
+    z.innerHTML = '<img alt="Menú de hoy de ' + LOC[l].nombre + '" src="' + URL.createObjectURL(b) + '">' +
+      (puede ? '<button class="btn" id="compartir">Subir a mi estado de WhatsApp</button>' +
+               '<ol><li>Toca el botón y elige <b>WhatsApp</b>.</li><li>Arriba del todo, toca <b>Mi estado</b>.</li><li>Pulsa enviar. Listo.</li></ol>'
+             : '<a class="btn" href="' + url + '" download="' + archivo.name + '">Guardar la imagen</a>' +
+               '<ol><li>Guarda la imagen.</li><li>En WhatsApp, ve a <b>Novedades</b> y toca la cámara de <b>Mi estado</b>.</li><li>Elige la imagen de la galería y envía.</li></ol>');
+    var c = document.getElementById("compartir");
+    if (c) c.onclick = function () { navigator.share({files: [archivo]}).catch(function () {}); };
+  }).catch(function () {
+    var cerrado = dia.getDay() === 0 || (dia.getDay() === 6 && l === "al");
+    z.innerHTML = '<div class="aviso">' + (cerrado ? "Hoy " + LOC[l].nombre + " no tiene menú del día." :
+      "El menú de hoy de " + LOC[l].nombre + " todavía no está aprobado. Cuando David lo apruebe, aparecerá aquí.") + '</div>';
+  });
+}
+document.querySelectorAll("#seg button").forEach(function (b) {
+  b.onclick = function () { l = b.dataset.l; try { localStorage.setItem("pp_estado_local", l); } catch (e) {} pintar(); };
+});
+pintar();
+</script>
+</body>
+</html>
