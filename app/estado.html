@@ -35,12 +35,14 @@ ol{text-align:left;color:var(--muted);padding-left:22px;line-height:1.5}
 </main>
 <script>
 // Saca la historia del menú de hoy (la que David aprobó y ya está en GitHub) y la comparte a WhatsApp.
-var LOC = {es: {nombre: "Espíritu Santo", archivo: "historia-1-menu-espiritu-santo.jpg"},
-           al: {nombre: "Alvedro", archivo: "historia-2-menu-alvedro.jpg"}};
+// Estado: la imagen vertical de la historia. Grupos: la cuadrada del carrusel, que se lee mejor en el chat.
+var LOC = {es: {nombre: "Espíritu Santo", archivo: "historia-1-menu-espiritu-santo.jpg", post: "1-menu-espiritu-santo.jpg"},
+           al: {nombre: "Alvedro", archivo: "historia-2-menu-alvedro.jpg", post: "2-menu-alvedro.jpg"}};
 var hoy = new Intl.DateTimeFormat("en-CA", {timeZone: "Europe/Madrid"}).format(new Date());
 var dia = new Date(hoy + "T12:00:00");
 document.getElementById("fecha").textContent = dia.toLocaleDateString("es-ES", {weekday: "long", day: "numeric", month: "long"});
 
+var grupo = /[?&]modo=grupo/.test(location.search);
 var l = (location.search.match(/[?&]l=(es|al)/) || [])[1];
 try { if (!l) l = localStorage.getItem("pp_estado_local") || ""; } catch (e) {}
 var archivo = null;
@@ -73,7 +75,35 @@ function pintar() {
 document.querySelectorAll("#seg button").forEach(function (b) {
   b.onclick = function () { l = b.dataset.l; try { localStorage.setItem("pp_estado_local", l); } catch (e) {} pintar(); };
 });
-pintar();
+function pintarGrupos() {
+  document.querySelector("h1").textContent = "Menú de hoy a los grupos";
+  document.getElementById("seg").style.display = "none";
+  var z = document.getElementById("zona");
+  z.innerHTML = "";
+  var texto = "Menú de hoy, " + dia.toLocaleDateString("es-ES", {weekday: "long", day: "numeric", month: "numeric"}) + " 🍽️";
+  ["es", "al"].forEach(function (k) {
+    var caja = document.createElement("div");
+    caja.innerHTML = '<div class="aviso">Buscando el menú de ' + LOC[k].nombre + '…</div>';
+    z.appendChild(caja);
+    var url = "../" + hoy + "/" + LOC[k].post;
+    fetch(url, {cache: "no-store"}).then(function (r) { if (!r.ok) throw new Error("falta"); return r.blob(); }).then(function (b) {
+      var f = new File([b], "menu-" + hoy + "-" + k + ".jpg", {type: "image/jpeg"});
+      var puede = navigator.canShare && navigator.canShare({files: [f], text: texto});
+      caja.innerHTML = '<h1 style="font-size:19px;margin-top:18px">' + LOC[k].nombre + '</h1><img alt="Menú de hoy de ' + LOC[k].nombre + '" src="' + URL.createObjectURL(b) + '">' +
+        (puede ? '<button class="btn">Enviar al grupo ' + LOC[k].nombre + '</button>'
+               : '<a class="btn" href="' + url + '" download="' + f.name + '">Guardar la imagen</a>');
+      var c = caja.querySelector("button");
+      if (c) c.onclick = function () { navigator.share({files: [f], text: texto}).catch(function () {}); };
+    }).catch(function () {
+      var cerrado = dia.getDay() === 0 || (dia.getDay() === 6 && k === "al");
+      caja.innerHTML = '<div class="aviso" style="margin-top:12px">' + (cerrado ? "Hoy " + LOC[k].nombre + " no tiene menú del día." : "El menú de hoy de " + LOC[k].nombre + " todavía no está aprobado.") + '</div>';
+    });
+  });
+  var ayuda = document.createElement("ol");
+  ayuda.innerHTML = "<li>Toca «Enviar al grupo» y elige <b>WhatsApp</b>.</li><li>Elige el grupo del local y envía.</li>";
+  z.appendChild(ayuda);
+}
+if (grupo) pintarGrupos(); else pintar();
 </script>
 </body>
 </html>
