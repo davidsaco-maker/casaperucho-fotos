@@ -1,0 +1,19 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reel San Martiño</title>
+<style>body{font-family:system-ui,sans-serif;background:#2b1d14;color:#f3e6d3;margin:0;padding:16px}h1{font-size:20px}
+.b{display:block;width:100%;box-sizing:border-box;margin:10px 0;padding:16px;border:0;border-radius:14px;background:#e8792b;color:#fff;font-size:17px;font-weight:600;text-align:center;text-decoration:none}
+.b2{background:#5a4334}video,img{width:100%;border-radius:12px;margin-top:8px}p{font-size:14px;opacity:.85}</style></head><body>
+<h1>Reel San Martiño (sin sonido)</h1>
+<video src="reel-sanmartino.mp4" controls playsinline muted></video>
+<button class="b" id="sv">📲 Compartir vídeo (Instagram o Guardar)</button>
+<a class="b b2" href="reel-sanmartino.mp4" download="reel-sanmartino.mp4">⬇ Descargar vídeo</a>
+<img src="portada-sanmartino.jpg" alt="Portada">
+<button class="b" id="sp">📲 Compartir portada</button>
+<a class="b b2" href="portada-sanmartino.jpg" download="portada-sanmartino.jpg">⬇ Descargar portada</a>
+<p>«Compartir» abre el menú del móvil: elige Instagram (Reels) para subirlo directo, o «Guardar»/Fotos para tenerlo en la galería. «Descargar» lo deja en la carpeta Descargas, que también sale en la galería.</p>
+<script>
+async function comp(u,n,t){try{const r=await fetch(u);const b=await r.blob();const f=new File([b],n,{type:t});
+if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]})}else{location.href=u}}catch(e){}}
+document.getElementById('sv').onclick=()=>comp('reel-sanmartino.mp4','reel-sanmartino.mp4','video/mp4');
+document.getElementById('sp').onclick=()=>comp('portada-sanmartino.jpg','portada-sanmartino.jpg','image/jpeg');
+</script></body></html>
